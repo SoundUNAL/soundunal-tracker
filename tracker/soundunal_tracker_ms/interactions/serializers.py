@@ -14,4 +14,4 @@ class UserSongsSerializer(serializers.Serializer):
 
 
 class CommentsSerializer(serializers.Serializer):
-    comments = serializers.ListField(child=serializers.CharField())
+    comments = serializers.ListField(child=serializers.JSONField())
