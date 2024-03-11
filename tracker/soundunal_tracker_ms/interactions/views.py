@@ -5,10 +5,10 @@ from rest_framework import status
 from .response import CommentsResponse, InteractionCounterResponse, UserReactionResponse, UserSongsResponse
 from .serializers import CommentsSerializer, InteractionCounterSerializer, UserReactionSerializer, UserSongsSerializer
 from .controllers.enums import Reaction
-from .controllers.implementations import MockInteractionsController
+from .controllers.implementations import MockInteractionsController, MongoInteractionsController
 
 
-controller = MockInteractionsController()
+controller = MongoInteractionsController()
 
 
 def build_interactions_counter_response(count):
@@ -99,10 +99,17 @@ def audio_dislikes(request, audio_id):
     if (request.query_params.get('user') is not None):
         return is_reacted_by_user(request, audio_id, Reaction.DISLIKED)
 
-    count = 200
-    # TODO: Revisar si no hay registros del audio en la tabla de likes
-    if audio_id == "5":
-        return Response({"Message": "Audio Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    # GET: numero de dislikes del audio
+    try:
+        count = controller.get_reactions_info(audio_id, Reaction.DISLIKED)
+    except Exception as e:
+        print(str(e))
+        return Response({"Message": "Info unavailable"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    if count == 0:
+        response_count = InteractionCounterResponse(count)
+        response_serializer = InteractionCounterSerializer(response_count)
+        return Response(response_serializer.data, status=status.HTTP_404_NOT_FOUND)
 
     return build_interactions_counter_response(count)
 
