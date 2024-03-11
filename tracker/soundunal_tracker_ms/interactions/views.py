@@ -29,18 +29,24 @@ def get_user_reaction(reaction):
     return response_serializer
 
 
-def do_react(request):
+def do_react(request, audio_id, reaction_type):
     user_id = request.data['user_id']
+    operation_type = controller.post_reaction(user_id, audio_id, reaction_type)
     if user_id == "5":
         return Response({"Message": "User Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
-    return Response(status=status.HTTP_201_CREATED)
+    return Response({"Type": operation_type}, status=status.HTTP_201_CREATED)
 
 
-def reaction_delete(request):
+def reaction_delete(request, audio_id):
     user_id = request.data['user_id']
+    operation_state = controller.delete_reaction(user_id, audio_id)
+
+    '''
     if user_id == "5":
         return Response({"Message": "User Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
-    return Response(status=status.HTTP_200_OK)
+    '''
+
+    return Response({"State": operation_state}, status=status.HTTP_200_OK)
 
 
 def is_reacted_by_user(request, audio_id, reaction_type):
@@ -60,10 +66,10 @@ def audio_likes(request, audio_id):
         return Response({"Message": "Audio Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
 
     if request.method == 'POST':
-        return do_react(request)
+        return do_react(request, audio_id, Reaction.LIKED)
 
     if request.method == 'DELETE':
-        return reaction_delete(request)
+        return reaction_delete(request, audio_id)
 
     # GET: filtro de que el usuario dio like a ese audio
     if (request.query_params.get('user') is not None):
@@ -91,10 +97,10 @@ def audio_dislikes(request, audio_id):
         return Response({"Message": "Audio Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
 
     if request.method == 'POST':
-        return do_react(request)
+        return do_react(request, audio_id, Reaction.DISLIKED)
 
     if request.method == 'DELETE':
-        return reaction_delete(request)
+        return reaction_delete(request, audio_id)
 
     if (request.query_params.get('user') is not None):
         return is_reacted_by_user(request, audio_id, Reaction.DISLIKED)
@@ -120,9 +126,11 @@ def user_likes(request):
     user_id = request.query_params.get('user')
     if not user_id.isnumeric():
         return Response({"Message": "User Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
-    songs = [1, 3, 4, 2]
+
+    songs = controller.get_liked_songs(user_id)
     if len(songs) == 0:
         return Response({"Message": "Information Not Found"}, status=status.HTTP_404_NOT_FOUND)
+
     liked = UserSongsResponse(songs)
     serializer = UserSongsSerializer(liked)
     return Response(serializer.data)
@@ -134,10 +142,12 @@ def audio_reproductions(request, audio_id):
     if not audio_id.isnumeric():
         return Response({"Message": "Audio Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
 
-    count = 2000012
+    count = controller.get_reproduction_info(audio_id)
     # TODO: Revisar si no hay registros del audio en la tabla de historial
+    '''
     if audio_id == "5":
         return Response({"Message": "Audio Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    '''
     return build_interactions_counter_response(count)
 
 
@@ -147,10 +157,7 @@ def audio_comments(request, audio_id):
     if not audio_id.isnumeric():
         return Response({"Message": "Audio Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
 
-    comments = ['malo', 'bueno', 'me encanto', 'sigan así']
-    # TODO: Revisar si no hay registros del audio en la tabla de reviews
-    if audio_id == "5":
-        return Response({"Message": "Audio Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    comments = controller.get_comments(audio_id)
     return build_comments_response(comments)
 
 
@@ -160,7 +167,8 @@ def user_recently_played(request, user_id):
     # TODO: refactor with user_likes (both have the same code)
     if not user_id.isnumeric():
         return Response({"Message": "User Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
-    songs = [100, 300, 445, 21]
+
+    songs = controller.get_recently_played(user_id)
     if len(songs) == 0:
         return Response({"Message": "Information Not Found"}, status=status.HTTP_404_NOT_FOUND)
     played = UserSongsResponse(songs)

@@ -24,8 +24,9 @@ class MongoAccessLogic():
         return self.connection.db_handler.history.count_documents({'audioID': audio_id})
 
     def get_user_likes(self, user_id):
-        return list(self.connection.db_handler.reactions.find({'userID': user_id, 'reaction': 'LIKED'},
-                                                              {'_id': 0, 'audioID': 1}))
+        result = self.connection.db_handler.reactions.find({'userID': user_id, 'reaction': 'LIKED'},
+                                                           {'_id': 0, 'audioID': 1})
+        return [x['audioID'] for x in result]
 
     def user_has_liked(self, user_id, audio_id):
         return True if self.connection.db_handler.reactions.find_one({'userID': user_id, 'audioID': audio_id, 'reaction': 'LIKED'}) is not None else False
@@ -34,11 +35,14 @@ class MongoAccessLogic():
         return True if self.connection.db_handler.reactions.find_one({'userID': user_id, 'audioID': audio_id, 'reaction': 'DISLIKED'}) is not None else False
 
     def get_audio_comments(self, audio_id):
-        return list(self.connection.db_handler.reviews.find({'audioID': audio_id}, {'_id': 0, 'userID': 1, 'comment': 1}))
+        result = self.connection.db_handler.reviews.find(
+            {'audioID': audio_id}, {'_id': 0, 'userID': 1, 'comment': 1})
+        return [x for x in result]
 
     def get_user_recent_songs(self, user_id):
-        return list(self.connection.db_handler.history.find({'userID': user_id}, {'_id': 0, 'audioID': 1}).sort(
-            'date', pymongo.DESCENDING).limit(15))
+        result = self.connection.db_handler.history.find({'userID': user_id}, {'_id': 0, 'audioID': 1}).sort(
+            'date', pymongo.DESCENDING).limit(15)
+        return [x['audioID'] for x in result]
 
     def delete_reaction(self, user_id, audio_id):
         deleted = self.connection.db_handler.reactions.delete_one(
@@ -49,14 +53,18 @@ class MongoAccessLogic():
         if self.connection.db_handler.reactions.find_one({'userID': user_id, 'audioID': audio_id}) is not None:
             self.connection.db_handler.reactions.update_one({'userID': user_id, 'audioID': audio_id}, {
                 '$set': {'reaction': "LIKED"}})
+            return 'Updated'
         else:
             self.connection.db_handler.reactions.insert_one(
                 {'userID': user_id, 'audioID': audio_id, 'reaction': "LIKED"})
+            return 'Created'
 
     def give_dislike(self, user_id, audio_id):
         if self.connection.db_handler.reactions.find_one({'userID': user_id, 'audioID': audio_id}) is not None:
             self.connection.db_handler.reactions.update_one({'userID': user_id, 'audioID': audio_id}, {
                 '$set': {'reaction': "DISLIKED"}})
+            return 'Updated'
         else:
             self.connection.db_handler.reactions.insert_one(
                 {'userID': user_id, 'audioID': audio_id, 'reaction': "DISLIKED"})
+            return 'Created'
