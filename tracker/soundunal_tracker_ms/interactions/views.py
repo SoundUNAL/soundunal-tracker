@@ -4,6 +4,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from .response import CommentsResponse, InteractionCounterResponse, UserReactionResponse, UserSongsResponse
 from .serializers import CommentsSerializer, InteractionCounterSerializer, UserReactionSerializer, UserSongsSerializer
+from .controllers.enums import Reaction
+from .controllers.implementations import MockInteractionsController
+
+
+controller = MockInteractionsController()
 
 
 def build_interactions_counter_response(count):
@@ -38,10 +43,14 @@ def reaction_delete(request):
     return Response(status=status.HTTP_200_OK)
 
 
-def is_reacted_by_user(request):
+def is_reacted_by_user(request, audio_id, reaction_type):
     user_id = request.query_params.get('user')
-    response_serializer = get_user_reaction(True)
-    return Response(response_serializer.data)
+    try:
+        response_serializer = get_user_reaction(
+            controller.get_user_reaction(user_id, audio_id, reaction_type))
+        return Response(response_serializer.data)
+    except Exception:
+        return Response({"Message": "Mocked is reacted exception response"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET', 'POST', 'DELETE'])
@@ -58,13 +67,19 @@ def audio_likes(request, audio_id):
 
     # GET: filtro de que el usuario dio like a ese audio
     if (request.query_params.get('user') is not None):
-        return is_reacted_by_user(request)
+        return is_reacted_by_user(request, audio_id, Reaction.LIKED)
 
     # GET: numero de likes del audio
-    count = 532
-    # TODO: Revisar si no hay registros del audio en la tabla de likes
-    if audio_id == "5":
-        return Response({"Message": "Audio Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    try:
+        count = controller.get_reactions_info(audio_id, Reaction.LIKED)
+    except Exception as e:
+        print(str(e))
+        return Response({"Message": "Info unavailable"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    if count == 0:
+        response_count = InteractionCounterResponse(count)
+        response_serializer = InteractionCounterSerializer(response_count)
+        return Response(response_serializer.data, status=status.HTTP_404_NOT_FOUND)
 
     return build_interactions_counter_response(count)
 
@@ -82,7 +97,7 @@ def audio_dislikes(request, audio_id):
         return reaction_delete(request)
 
     if (request.query_params.get('user') is not None):
-        return is_reacted_by_user(request)
+        return is_reacted_by_user(request, audio_id, Reaction.DISLIKED)
 
     count = 200
     # TODO: Revisar si no hay registros del audio en la tabla de likes
