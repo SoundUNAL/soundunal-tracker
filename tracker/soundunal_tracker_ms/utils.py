@@ -3,7 +3,7 @@ import pymongo
 
 
 class Connection():
-    def __init__(self, connection_uri="mongodb://localhost:27017/", db_name='soundunal_interactions_db'):
+    def __init__(self, connection_uri="mongodb://host.docker.internal:27017/", db_name='soundunal_interactions_db'):
         self.client = MongoClient(connection_uri)
         self.db_handler = self.client[db_name]
 
