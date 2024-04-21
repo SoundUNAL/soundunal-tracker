@@ -1,0 +1,35 @@
+name : tracker_ms
+version: '3.8'
+services:
+  python-app:
+    build:
+      context: .
+      dockerfile: Dockerfile-python
+    ports:
+      - "1234:1234"
+    volumes:
+      - .:/app
+    depends_on:
+      - mongodb-docker
+    networks:
+      - sound-tracker
+    links:
+      - mongodb-docker:mongodb-docker
+
+  mongodb-docker:
+    build:
+      context: .
+      dockerfile: Dockerfile-mongodb
+    restart: always
+    ports:
+      - "27018:27018"
+    networks:
+      - sound-tracker
+
+volumes:
+  mongodb-data:
+
+networks:
+  sound-tracker: 
+    driver: bridge 
+  
