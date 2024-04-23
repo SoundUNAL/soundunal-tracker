@@ -68,3 +68,13 @@ class MongoAccessLogic():
             self.connection.db_handler.reactions.insert_one(
                 {'userID': user_id, 'audioID': audio_id, 'reaction': "DISLIKED"})
             return 'Created'
+
+    def post_comment(self, user_id, audio_id, comment):
+        self.connection.db_handler.reviews.insert_one(
+            {'userID': user_id, 'audioID': audio_id, 'comment': comment})
+        return 'Created'
+
+    def new_reproduction(self, user_id, audio_id, date):
+        self.connection.db_handler.history.insert_one(
+            {'userID': user_id, 'audioID': audio_id, 'date': date})
+        return 'Created'

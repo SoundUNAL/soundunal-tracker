@@ -1,3 +1,4 @@
+import datetime
 from .enums import Reaction
 
 
@@ -24,4 +25,10 @@ class InteractionsController():
         pass
 
     def delete_reaction(self, user_id: str, audio_id: str) -> bool:
+        pass
+
+    def post_comment(self, user_id: str, audio_id: str, comment: str) -> str:
+        pass
+
+    def post_reproduction(self, user_id: str, audio_id: str, date: datetime) -> str:
         pass
