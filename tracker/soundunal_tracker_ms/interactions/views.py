@@ -1,3 +1,4 @@
+import datetime
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -35,6 +36,20 @@ def do_react(request, audio_id, reaction_type):
     if user_id == "5":
         return Response({"Message": "User Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
     return Response({"Type": operation_type}, status=status.HTTP_201_CREATED)
+
+
+def comment(request, audio_id):
+    user_id = request.data['user_id']
+    com = request.data['comment']
+    make_comment = controller.post_comment(user_id, audio_id, com)
+    return Response({"State": make_comment}, status=status.HTTP_201_CREATED)
+
+
+def new_interaction(request, audio_id):
+    user_id = request.data['user_id']
+    interact = controller.post_reproduction(
+        user_id, audio_id, datetime.datetime.now(datetime.UTC))
+    return Response({"State": interact}, status=status.HTTP_201_CREATED)
 
 
 def reaction_delete(request, audio_id):
@@ -136,11 +151,14 @@ def user_likes(request):
     return Response(serializer.data)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @renderer_classes([JSONRenderer])
 def audio_reproductions(request, audio_id):
     if not audio_id.isnumeric():
         return Response({"Message": "Audio Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'POST':
+        return new_interaction(request, audio_id)
 
     count = controller.get_reproduction_info(audio_id)
     # TODO: Revisar si no hay registros del audio en la tabla de historial
@@ -151,11 +169,14 @@ def audio_reproductions(request, audio_id):
     return build_interactions_counter_response(count)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @renderer_classes([JSONRenderer])
 def audio_comments(request, audio_id):
     if not audio_id.isnumeric():
         return Response({"Message": "Audio Not Valid"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'POST':
+        return comment(request, audio_id)
 
     comments = controller.get_comments(audio_id)
     return build_comments_response(comments)

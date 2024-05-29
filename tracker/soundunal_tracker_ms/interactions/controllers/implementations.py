@@ -1,3 +1,4 @@
+import datetime
 from ...utils import Connection, MongoAccessLogic
 from .enums import Reaction
 from .interfaces import InteractionsController
@@ -40,6 +41,12 @@ class MongoInteractionsController(InteractionsController):
 
     def delete_reaction(self, user_id: str, audio_id: str) -> bool:
         return self.db.delete_reaction(int(user_id), int(audio_id))
+
+    def post_comment(self, user_id: str, audio_id: str, comment: str) -> str:
+        return self.db.post_comment(int(user_id), int(audio_id), comment)
+
+    def post_reproduction(self, user_id: str, audio_id: str, date: datetime) -> str:
+        return self.db.new_reproduction(int(user_id), int(audio_id), date)
 
 
 class MockInteractionsController(InteractionsController):
